@@ -1,5 +1,6 @@
 package sg.edu.nus.iss.paf_day28_workshopA.controller;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.bson.Document;
@@ -12,7 +13,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.json.Json;
+import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
+import sg.edu.nus.iss.paf_day28_workshopA.repository.GameRepository;
 import sg.edu.nus.iss.paf_day28_workshopA.service.GameService;
 
 @RestController
@@ -21,6 +24,7 @@ public class GameController {
 
     @Autowired
     GameService gameService;
+
 
     @GetMapping(path = "/game/{gameId}/reviews", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getReviewsByGameId(@PathVariable int gameId) {
@@ -55,6 +59,15 @@ public class GameController {
 
         return ResponseEntity.status(200).body(result.toString());
 
+    }
+
+
+    @GetMapping(path="/testing", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> getLowestReviews2(){
+
+        JsonObject result = gameService.getLowestReviews2();
+
+        return ResponseEntity.status(200).body(result.toString());
     }
 
 }

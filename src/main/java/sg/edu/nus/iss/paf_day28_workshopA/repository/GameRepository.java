@@ -6,7 +6,9 @@ import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.AddFieldsOperation;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.ArrayOperators;
 import org.springframework.data.mongodb.core.aggregation.GroupOperation;
 import org.springframework.data.mongodb.core.aggregation.LookupOperation;
 import org.springframework.data.mongodb.core.aggregation.MatchOperation;
@@ -176,6 +178,67 @@ public class GameRepository {
         Aggregation pipeline = Aggregation.newAggregation(lookupComments, unwindReviews, sortByRating, groupOperation, removeId);
 
         return mongoTemplate.aggregate(pipeline, "games", Document.class).getMappedResults();
+    }
+
+
+
+    // db.games.aggregate([
+    //     { $lookup: {
+    //         from: 'comments',
+    //         foreignField: 'gid',
+    //         localField: 'gid',
+    //         as: 'reviews',
+    //         pipeline: [
+    //             { $sort: { rating: 1 } },
+    //             { $limit: 1 }
+    //         ]
+    //     }},
+    //     { $addFields: {
+    //         review: { $arrayElemAt: ['$reviews', 0] }
+    //     }},
+    //     { $project: {
+    //         _id: '$gid',
+    //         game_id: '$gid',
+    //         name: 1,
+    //         rating: '$review.rating',
+    //         user: '$review.user',
+    //         comment: '$review.c_text',
+    //         review_id: '$review.c_id'
+    //     }}
+    // ])
+    public List<Document> getLowestReviews2(){
+        
+        LookupOperation lookupComments = LookupOperation.newLookup()
+            .from("comments")
+            .localField("gid")
+            .foreignField("gid")
+            .pipeline(
+                Aggregation.sort(Sort.by(Sort.Direction.ASC, "rating")),
+                Aggregation.limit(1)
+            )
+            .as("reviews");
+
+        // $addFields to extract the first review from 'reviews' array
+        AddFieldsOperation addFields = AddFieldsOperation.addField("review")
+            .withValue(ArrayOperators.ArrayElemAt.arrayOf("reviews").elementAt(0))
+            .build();
+
+        // $project to select required fields
+        ProjectionOperation project = Aggregation.project()
+            .and("gid").as("_id")
+            .and("gid").as("game_id")
+            .and("name").as("name")
+            .and("review.rating").as("rating")
+            .and("review.user").as("user")
+            .and("review.c_text").as("comment")
+            .and("review.c_id").as("review_id");
+
+        // Build aggregation pipeline
+        Aggregation aggregation = Aggregation.newAggregation(lookupComments, addFields, project);
+
+        // Execute query
+        return mongoTemplate.aggregate(aggregation, "games", Document.class).getMappedResults();
+    
     }
 
 }

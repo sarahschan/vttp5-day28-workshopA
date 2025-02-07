@@ -79,4 +79,27 @@ public class GameService {
         return result;
 
     }
+
+
+    public JsonObject getLowestReviews2(){
+
+        List<Document> highestReviews = gameRepository.getLowestReviews2();
+
+        JsonArrayBuilder gamesArrayBuilder = Json.createArrayBuilder();
+
+        for (Document d : highestReviews){
+            String jsonString = d.toJson();
+            JsonObject gamesObject = Json.createReader(new StringReader(jsonString)).readObject();
+            gamesArrayBuilder.add(gamesObject);
+        }
+
+        JsonObject result = Json.createObjectBuilder()
+            .add("rating", "lowest")
+            .add("games", gamesArrayBuilder.build())
+            .add("timestamp", LocalDateTime.now().toString())
+            .build();
+
+        return result;
+
+    }
 }
